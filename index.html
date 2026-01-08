@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="it">
+    <head>
+         <!-- BASIC -->
+	    <meta charset="UTF-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	    <!-- TITLE (SEO + Browser) -->
+	    <title>Labirinto Interattivo Online | Gioco Maze HTML5 con Solver AI</title>
+	
+	    <!-- DESCRIPTION -->
+	    <meta name="description" content="Gioca a un labirinto interattivo online in HTML5. Generazione casuale, movimento con tastiera, timer, salvataggio JPG e solver AI. Perfetto per browser desktop e mobile.">
+	
+	    <!-- KEYWORDS (ancora utili per motori minori) -->
+	    <meta name="keywords" content="labirinto interattivo, maze game online, gioco labirinto html5, maze javascript, labirinto browser, gioco puzzle web">
+	
+	    <!-- AUTHOR -->
+	    <meta name="Aprea" content="Labirinto Interattivo HTML5">
+	
+	    <!-- ROBOTS -->
+	    <meta name="robots" content="index, follow">
+	
+	    <!-- CANONICAL (se online) -->
+	    <!-- <link rel="canonical" href="https://www.tuosito.it/labirinto-interattivo"> -->
+	
+	    <!-- OPEN GRAPH (Facebook, WhatsApp, Telegram) -->
+	    <meta property="og:title" content="Labirinto Interattivo Online | Gioco Maze HTML5">
+	    <meta property="og:description" content="Sfida il tuo cervello con un labirinto interattivo: movimento in tempo reale, timer, difficoltà multiple e solver AI.">
+	    <meta property="og:type" content="website">
+	    <meta property="og:locale" content="it_IT">
+	    <!-- <meta property="og:url" content="https://www.tuosito.it/labirinto-interattivo"> -->
+	    <!-- <meta property="og:image" content="https://www.tuosito.it/preview-labirinto.jpg"> -->
+	
+	    <!-- TWITTER / X -->
+	    <meta name="twitter:card" content="summary_large_image">
+	    <meta name="twitter:title" content="Labirinto Interattivo Online | Maze Game HTML5">
+	    <meta name="twitter:description" content="Gioco labirinto HTML5 con solver AI, timer e salvataggio immagine.">
+	
+	    <!-- THEME COLOR (mobile browser) -->
+	    <meta name="theme-color" content="#667eea">
+	
+	    <!-- FAVICON -->
+	    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+	
+	    <!-- PERFORMANCE -->
+	    <meta name="format-detection" content="telephone=no">
+        <style>
+            /* === STILE ORIGINALE INALTERATO === */
+            *{margin:0;padding:0;box-sizing:border-box}
+            body{
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+            min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+            .container{
+            background:white;border-radius:20px;padding:30px;
+            box-shadow:0 20px 60px rgba(0,0,0,.3);
+            max-width:1200px;width:100%}
+            h1{text-align:center;color:#667eea;margin-bottom:30px;font-size:2.5em}
+            .controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+            .input-group{display:flex;flex-direction:column}
+            input,select,button{padding:10px;border-radius:8px;border:2px solid #e0e0e0}
+            button{background:#667eea;color:white;font-weight:600;cursor:pointer}
+            .btn-secondary{background:#f59e0b}
+            .btn-success{background:#10b981}
+            .stats{display:flex;gap:20px;justify-content:center;margin-bottom:10px}
+            .stat-item{background:#f5576c;color:white;padding:10px 20px;border-radius:10px}
+            #mazeContainer{display:flex;justify-content:center;background:#f8f9fa;border-radius:15px;padding:20px}
+            #maze{border:3px solid #333}
+            .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none}
+            .overlay.show{display:block}
+            .victory-message{
+            position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+            background:white;padding:40px;border-radius:20px;text-align:center}
+            .victory-message.show{transform:translate(-50%,-50%) scale(1)}
+            .notification{position:fixed;top:20px;right:20px;
+            background:#10b981;color:white;padding:12px 20px;border-radius:10px;
+            transform:translateX(300px);transition:.3s}
+            .notification.show{transform:translateX(0)}
+        </style>
+		
+    </head>
+    <body>
+        <div class="notification" id="notification">✅ Immagine salvata!</div>
+        <div class="container">
+            <h1>🎮 Labirinto Interattivo</h1>
+            <div class="controls">
+                <select id="difficulty" onchange="updateDifficulty()">
+                    <option value="easy">Facile</option>
+                    <option value="medium" selected>Medio</option>
+                    <option value="hard">Difficile</option>
+                    <option value="custom">Personalizzato</option>
+                </select>
+                <input type="number" id="width" value="20" disabled>
+                <input type="number" id="height" value="15" disabled>
+                <button onclick="generateMaze()">🎲 Genera</button>
+                <button onclick="resetPlayer()" class="btn-secondary">🔄 Reset</button>
+                <button onclick="toggleSolution()" class="btn-secondary">🧠 Soluzione</button>
+                <button onclick="undoMove()" class="btn-secondary">↩️ Undo</button>
+                <button onclick="togglePause()" class="btn-secondary">⏸️ Pausa</button>
+                <button onclick="saveAsJPG()" class="btn-success">📸 JPG</button>
+            </div>
+            <div class="stats">
+                <div class="stat-item">Mosse <span id="moves">0</span></div>
+                <div class="stat-item">Tempo <span id="timer">00:00</span></div>
+            </div>
+            <div id="mazeContainer">
+                <canvas id="maze"></canvas>
+            </div>
+        </div>
+        <div class="overlay" id="overlay"></div>
+        <div class="victory-message" id="victoryMessage">
+            <h2>🎉 VITTORIA!</h2>
+            <p>Mosse: <b id="finalMoves"></b></p>
+            <p>Tempo: <b id="finalTime"></b></p>
+            <button onclick="closeVictory()">Chiudi</button>
+        </div>
+        <script>
+            /* === LABIRINTO === */
+            class Maze{
+            constructor(w,h){this.width=w;this.height=h;this.cells=[];
+            for(let y=0;y<h;y++){this.cells[y]=[];
+            for(let x=0;x<w;x++)
+            this.cells[y][x]={walls:{t:1,r:1,b:1,l:1},v:false};}}
+            generate(){
+            let s=[{x:0,y:0}];this.cells[0][0].v=true;
+            while(s.length){
+            let c=s[s.length-1],n=[];
+            if(c.y>0&&!this.cells[c.y-1][c.x].v)n.push([0,-1,'t','b']);
+            if(c.x<this.width-1&&!this.cells[c.y][c.x+1].v)n.push([1,0,'r','l']);
+            if(c.y<this.height-1&&!this.cells[c.y+1][c.x].v)n.push([0,1,'b','t']);
+            if(c.x>0&&!this.cells[c.y][c.x-1].v)n.push([-1,0,'l','r']);
+            if(!n.length){s.pop();continue;}
+            let[dX,dY,w1,w2]=n[Math.random()*n.length|0];
+            this.cells[c.y][c.x].walls[w1]=0;
+            this.cells[c.y+dY][c.x+dX].walls[w2]=0;
+            this.cells[c.y+dY][c.x+dX].v=true;
+            s.push({x:c.x+dX,y:c.y+dY});
+            }}}
+            
+            /* === STATO === */
+            let maze,player,path,moves,timer,paused=false,start,elapsed=0;
+            let solution=[],showSolution=false,cellSize;
+            
+            /* === UI === */
+            function updateDifficulty(){
+            const d=difficulty.value;
+            width.disabled=height.disabled=d!=='custom';
+            if(d==='easy'){width.value=10;height.value=10}
+            if(d==='medium'){width.value=20;height.value=15}
+            if(d==='hard'){width.value=35;height.value=25}
+            }
+            
+            function generateMaze(){
+            maze=new Maze(+width.value,+height.value);
+            maze.generate();resetPlayer();
+            }
+            
+            function resetPlayer(){
+            player={x:0,y:0};path=[{x:0,y:0}];
+            moves=0;elapsed=0;paused=false;
+            movesEl.textContent=0;
+            clearInterval(timer);
+            start=Date.now();
+            timer=setInterval(updateTimer,1000);
+            draw();
+            }
+            
+            function updateTimer(){
+            if(paused)return;
+            elapsed++;
+            timerEl.textContent=
+            `${String(elapsed/60|0).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
+            }
+            
+            function draw(){
+            const c=mazeCanvas,ctx=c.getContext('2d');
+            cellSize=Math.min(800/maze.width,500/maze.height);
+            c.width=maze.width*cellSize;
+            c.height=maze.height*cellSize;
+            ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+            
+            /* soluzione */
+            if(showSolution)for(let p of solution){
+            ctx.fillStyle='rgba(59,130,246,.3)';
+            ctx.fillRect(p.x*cellSize+4,p.y*cellSize+4,cellSize-8,cellSize-8);
+            }
+            
+            /* percorso */
+            ctx.fillStyle='#86efac';
+            for(let p of path)
+            ctx.fillRect(p.x*cellSize+4,p.y*cellSize+4,cellSize-8,cellSize-8);
+            
+            /* traguardo */
+            ctx.fillStyle='#f87171';
+            ctx.fillRect((maze.width-1)*cellSize+4,(maze.height-1)*cellSize+4,cellSize-8,cellSize-8);
+            
+            /* giocatore */
+            ctx.fillStyle='#22c55e';
+            ctx.beginPath();
+            ctx.arc(player.x*cellSize+cellSize/2,player.y*cellSize+cellSize/2,cellSize/3,0,Math.PI*2);
+            ctx.fill();
+            
+            /* muri */
+            ctx.strokeStyle='#333';ctx.lineWidth=2;
+            maze.cells.forEach((r,y)=>r.forEach((c,x)=>{
+            let px=x*cellSize,py=y*cellSize;
+            if(c.walls.t){ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+cellSize,py);ctx.stroke()}
+            if(c.walls.r){ctx.beginPath();ctx.moveTo(px+cellSize,py);ctx.lineTo(px+cellSize,py+cellSize);ctx.stroke()}
+            if(c.walls.b){ctx.beginPath();ctx.moveTo(px,py+cellSize);ctx.lineTo(px+cellSize,py+cellSize);ctx.stroke()}
+            if(c.walls.l){ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py+cellSize);ctx.stroke()}
+            }));
+            }
+            
+            /* === MOVIMENTO === */
+            function move(dx,dy,wall){
+            if(paused)return;
+            let c=maze.cells[player.y][player.x];
+            if(c.walls[wall])return;
+            player.x+=dx;player.y+=dy;
+            moves++;movesEl.textContent=moves;
+            path.push({...player});
+            draw();
+            if(player.x===maze.width-1&&player.y===maze.height-1)victory();
+            }
+            
+            document.addEventListener('keydown',e=>{
+            if(e.key==='ArrowUp'||e.key==='w')move(0,-1,'t');
+            if(e.key==='ArrowDown'||e.key==='s')move(0,1,'b');
+            if(e.key==='ArrowLeft'||e.key==='a')move(-1,0,'l');
+            if(e.key==='ArrowRight'||e.key==='d')move(1,0,'r');
+            });
+            
+            /* === EXTRA === */
+            function undoMove(){
+            if(path.length<2)return;
+            path.pop();player=path[path.length-1];
+            moves--;movesEl.textContent=moves;draw();
+            }
+            
+            function togglePause(){paused=!paused}
+            
+            function toggleSolution(){
+            showSolution=!showSolution;
+            if(showSolution)solve();
+            draw();
+            }
+            
+            function solve(){
+            solution=[];
+            let q=[[0,0]],p={},v=new Set(['0,0']);
+            while(q.length){
+            let[x,y]=q.shift();
+            if(x==maze.width-1&&y==maze.height-1)break;
+            let c=maze.cells[y][x];
+            [[0,-1,'t'],[1,0,'r'],[0,1,'b'],[-1,0,'l']].forEach(([dx,dy,w])=>{
+            let nx=x+dx,ny=y+dy,k=`${nx},${ny}`;
+            if(!c.walls[w]&&nx>=0&&ny>=0&&nx<maze.width&&ny<maze.height&&!v.has(k)){
+            v.add(k);p[k]=[x,y];q.push([nx,ny]);
+            }});
+            }
+            let cur=[maze.width-1,maze.height-1];
+            while(cur){solution.push({x:cur[0],y:cur[1]});cur=p[`${cur[0]},${cur[1]}`]}
+            solution.reverse();
+            }
+            
+            /* === FINALE === */
+            function victory(){
+            clearInterval(timer);
+            finalMoves.textContent=moves;
+            finalTime.textContent=timerEl.textContent;
+            overlay.classList.add('show');
+            victoryMessage.classList.add('show');
+            }
+            
+            function closeVictory(){
+            overlay.classList.remove('show');
+            victoryMessage.classList.remove('show');
+            }
+            
+            function saveAsJPG(){
+            let a=document.createElement('a');
+            a.href=mazeCanvas.toDataURL('image/jpeg');
+            a.download='labirinto.jpg';a.click();
+            notification.classList.add('show');
+            setTimeout(()=>notification.classList.remove('show'),2500);
+            }
+            
+            /* === INIT === */
+            const mazeCanvas=document.getElementById('maze');
+            const movesEl=document.getElementById('moves');
+            const timerEl=document.getElementById('timer');
+            window.onload=()=>{updateDifficulty();generateMaze();}
+        </script>
+    </body>
+</html>
